@@ -684,14 +684,18 @@ ${nb.contenido}
 Genera UNA pregunta de trivia basada ÚNICAMENTE en el texto anterior.
 Preguntas ya usadas (no repetir): ${usadas || 'ninguna'}
 
-Responde ÚNICAMENTE con JSON válido, sin texto extra, sin markdown, sin backticks. Formato exacto:
-{"pregunta":"¿...?","opciones":["opción A","opción B","opción C","opción D"],"correcta":0,"categoria":"máximo 2 palabras","explicacion":"explicación breve de por qué es correcta"}
+IMPORTANTE: Responde ÚNICAMENTE con el JSON, nada más. Sin explicaciones, sin markdown, sin backticks, sin texto antes o después.
 
-Reglas:
-- "correcta" es el índice (0, 1, 2 o 3) de la opción correcta
-- Las 4 opciones deben ser plausibles y relacionadas al tema
-- La pregunta debe ser específica y basarse en el texto
-- La categoría debe tener máximo 2 palabras`;
+Formato exacto (copia esta estructura):
+{"pregunta":"¿Texto de la pregunta?","opciones":["Opción A","Opción B","Opción C","Opción D"],"correcta":0,"categoria":"2 palabras","explicacion":"Por qué es correcta"}
+
+Reglas estrictas:
+- "correcta" es el índice (0, 1, 2 o 3) de la opción correcta en el array
+- El array "opciones" debe tener EXACTAMENTE 4 elementos
+- Las 4 opciones deben ser plausibles
+- La pregunta debe basarse en el texto del cuaderno
+- La categoría máximo 2 palabras
+- SOLO responde con el JSON, nada más`;
 
   const res = await fetch(API, {
     method: 'POST',
@@ -717,14 +721,21 @@ Reglas:
 
   if (!texto) throw new Error('Respuesta vacía de la IA');
 
-  // Limpiar y parsear JSON
-  const limpio = texto.replace(/```json|```/g,'').trim();
+  // Limpiar markdown
+  let limpio = texto.replace(/```json|```/g,'').trim();
 
-  // Buscar el JSON dentro del texto por si viene con texto extra
+  // Buscar el JSON dentro del texto
   const match = limpio.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('No se encontró JSON en la respuesta');
 
-  return JSON.parse(match[0]);
+  const q = JSON.parse(match[0]);
+
+  // Validar que tenga todos los campos necesarios
+  if (!q.pregunta || !Array.isArray(q.opciones) || q.opciones.length < 4 || q.correcta === undefined) {
+    throw new Error('JSON incompleto: ' + JSON.stringify(q));
+  }
+
+  return q;
 }
 
 function mostrarPregunta(q) {
