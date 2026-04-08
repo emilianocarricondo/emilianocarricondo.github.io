@@ -351,37 +351,8 @@
       <div class="rueda-centro">?</div>
     </div>
 
-    <div id="alerta-key" class="alert-config" style="display:none">
-      ⚠️ Configurá tu API Key antes de jugar
-    </div>
-
     <button class="btn btn-primary" onclick="ir('s-notebooks')">🎮 Jugar</button>
     <button class="btn btn-ghost" onclick="ir('s-agregar')">📚 Agregar cuaderno</button>
-    <button class="btn btn-ghost" onclick="ir('s-config')">⚙️ Configurar API Key</button>
-  </div>
-
-  <!-- ===== PANTALLA: CONFIGURAR API ===== -->
-  <div class="screen" id="s-config">
-    <div class="titulo-pantalla">API Key</div>
-    <div class="desc-pantalla">Necesitás una clave para que la IA genere preguntas</div>
-
-    <div class="api-box" style="width:100%">
-      <label>Paso 1: Creá tu cuenta gratis</label>
-      <div style="font-size:0.85rem;color:#aaa;line-height:1.6;">
-        Entrá a <a href="https://console.anthropic.com" style="color:#7c4dff;" target="_blank">console.anthropic.com</a>, 
-        registrate y andá a <strong style="color:#fff;">API Keys → Create Key</strong>
-      </div>
-    </div>
-
-    <div class="api-box" style="width:100%">
-      <label>Paso 2: Pegá tu clave acá</label>
-      <input class="api-input" type="password" id="input-key" placeholder="sk-ant-api03-..." autocomplete="off" />
-      <div class="api-hint">Tu clave se guarda solo en este navegador (localStorage). Empieza con <code style="color:#ce93d8;">sk-ant-</code></div>
-    </div>
-
-    <div id="key-error" class="error-msg"></div>
-    <button class="btn btn-primary" onclick="guardarKey()">Guardar clave</button>
-    <button class="btn btn-ghost" onclick="ir('s-inicio')">Volver</button>
   </div>
 
   <!-- ===== PANTALLA: ELEGIR CUADERNO ===== -->
@@ -405,14 +376,23 @@
   <!-- ===== PANTALLA: AGREGAR CUADERNO ===== -->
   <div class="screen" id="s-agregar">
     <div class="titulo-pantalla">Nuevo cuaderno</div>
-    <div class="desc-pantalla">Pegá el texto sobre el que querés estudiar</div>
+    <div class="desc-pantalla">Subí un archivo o pegá el texto</div>
 
     <div style="width:100%">
       <label class="campo-label">Nombre del cuaderno</label>
       <input class="campo-input" type="text" id="nb-nombre" placeholder="Ej: Historia Argentina, Biología..." maxlength="50" />
 
-      <label class="campo-label">Contenido (apuntes, resumen, texto)</label>
-      <textarea class="campo-input" id="nb-contenido" placeholder="Pegá acá el texto de tu cuaderno. Puede ser apuntes, un resumen, fragmentos de libros, etc. Cuanto más texto, más variadas serán las preguntas.&#10;&#10;Mínimo: unas pocas oraciones."></textarea>
+      <label class="campo-label">Subir archivo (PDF, Word o TXT)</label>
+      <div id="zona-archivo" style="border:2px dashed #ffffff33;border-radius:14px;padding:1.2rem;text-align:center;cursor:pointer;margin-bottom:0.9rem;transition:border 0.2s;background:#1a1a35;" onclick="document.getElementById('input-archivo').click()" ondragover="event.preventDefault();this.style.borderColor='#f9a825'" ondragleave="this.style.borderColor='#ffffff33'" ondrop="soltarArchivo(event)">
+        <div style="font-size:2rem;margin-bottom:0.3rem;">📄</div>
+        <div style="font-size:0.88rem;color:#aaa;">Arrastrá acá o cliqueá para subir</div>
+        <div style="font-size:0.75rem;color:#555;margin-top:0.2rem;">PDF, Word (.docx), TXT</div>
+        <div id="archivo-nombre" style="margin-top:0.5rem;font-size:0.85rem;color:#f9a825;font-weight:700;"></div>
+      </div>
+      <input type="file" id="input-archivo" accept=".pdf,.docx,.txt" style="display:none" onchange="leerArchivo(this)">
+
+      <label class="campo-label">O escribí / pegá el texto directamente</label>
+      <textarea class="campo-input" id="nb-contenido" placeholder="Pegá acá el texto de tu cuaderno. Puede ser apuntes, un resumen, fragmentos de libros, etc."></textarea>
 
       <div id="nb-error" class="error-msg"></div>
       <button class="btn btn-primary" onclick="guardarNb()">Guardar cuaderno</button>
@@ -479,9 +459,9 @@
 
 <script>
 // ===================== ESTADO =====================
-const API = 'https://api.anthropic.com/v1/messages';
+const API = 'https://preguntados-api.emiliano-carricondo.workers.dev';
 const MODEL = 'claude-sonnet-4-20250514';
-const TOTAL = 7;
+const TOTAL = 20;
 const TIEMPO = 20;
 
 let notebooks = [];
@@ -505,41 +485,19 @@ function cargarDatos() {
     }];
     guardarNbs();
   }
-  verificarKey();
 }
 
 function guardarNbs() { localStorage.setItem('pq_notebooks', JSON.stringify(notebooks)); }
-function getKey() { return localStorage.getItem('pq_apikey') || ''; }
-
-function verificarKey() {
-  const ok = getKey().startsWith('sk-ant-');
-  document.getElementById('alerta-key').style.display = ok ? 'none' : 'block';
-}
 
 // ===================== NAVEGACIÓN =====================
 function ir(pantalla) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(pantalla).classList.add('active');
   if (pantalla === 's-notebooks') renderNbs();
-  if (pantalla === 's-config') {
-    const k = getKey();
-    if (k) document.getElementById('input-key').value = k;
-  }
+
 }
 
-// ===================== API KEY =====================
-function guardarKey() {
-  const val = document.getElementById('input-key').value.trim();
-  const err = document.getElementById('key-error');
-  if (!val.startsWith('sk-ant-')) {
-    err.textContent = 'La clave debe comenzar con sk-ant-'; return;
-  }
-  err.textContent = '';
-  localStorage.setItem('pq_apikey', val);
-  verificarKey();
-  alert('✅ ¡API Key guardada! Ya podés jugar.');
-  ir('s-inicio');
-}
+
 
 // ===================== CUADERNOS =====================
 function renderNbs() {
@@ -580,6 +538,96 @@ function borrarNb(i) {
   renderNbs();
 }
 
+// ===================== ARCHIVOS =====================
+function soltarArchivo(e) {
+  e.preventDefault();
+  document.getElementById('zona-archivo').style.borderColor = '#ffffff33';
+  const file = e.dataTransfer.files[0];
+  if (file) procesarArchivo(file);
+}
+
+function leerArchivo(input) {
+  const file = input.files[0];
+  if (file) procesarArchivo(file);
+}
+
+async function procesarArchivo(file) {
+  const nombre = file.name;
+  const ext = nombre.split('.').pop().toLowerCase();
+  document.getElementById('archivo-nombre').textContent = '⏳ Leyendo ' + nombre + '...';
+  document.getElementById('nb-error').textContent = '';
+
+  try {
+    let texto = '';
+
+    if (ext === 'txt') {
+      texto = await file.text();
+
+    } else if (ext === 'pdf') {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfjsLib = await loadPdfJs();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        texto += content.items.map(item => item.str).join(' ') + '\n';
+      }
+
+    } else if (ext === 'docx') {
+      const arrayBuffer = await file.arrayBuffer();
+      const mammoth = await loadMammoth();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      texto = result.value;
+
+    } else {
+      document.getElementById('nb-error').textContent = 'Formato no soportado. Usá PDF, Word o TXT.';
+      return;
+    }
+
+    texto = texto.trim();
+    if (texto.length < 40) {
+      document.getElementById('nb-error').textContent = 'El archivo parece estar vacío o no se pudo leer.';
+      document.getElementById('archivo-nombre').textContent = '';
+      return;
+    }
+
+    document.getElementById('nb-contenido').value = texto;
+    document.getElementById('archivo-nombre').textContent = '✅ ' + nombre + ' (' + Math.round(texto.length/1000) + 'k caracteres)';
+    if (!document.getElementById('nb-nombre').value) {
+      document.getElementById('nb-nombre').value = nombre.replace(/\.[^/.]+$/, '');
+    }
+
+  } catch(e) {
+    document.getElementById('nb-error').textContent = 'Error leyendo el archivo: ' + e.message;
+    document.getElementById('archivo-nombre').textContent = '';
+  }
+}
+
+function loadPdfJs() {
+  return new Promise((resolve, reject) => {
+    if (window.pdfjsLib) { resolve(window.pdfjsLib); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      resolve(window.pdfjsLib);
+    };
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function loadMammoth() {
+  return new Promise((resolve, reject) => {
+    if (window.mammoth) { resolve(window.mammoth); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+    s.onload = () => resolve(window.mammoth);
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
 function guardarNb() {
   const nombre = document.getElementById('nb-nombre').value.trim();
   const contenido = document.getElementById('nb-contenido').value.trim();
@@ -598,10 +646,6 @@ function guardarNb() {
 // ===================== JUEGO =====================
 async function iniciarJuego() {
   if (nbSel === null) return;
-  if (!getKey().startsWith('sk-ant-')) {
-    alert('⚠️ Primero configurá tu API Key en ⚙️ Configurar API Key');
-    ir('s-config'); return;
-  }
   score = 0; vidas = 3; correctas = 0; incorrectas = 0; qIdx = 0; preguntas = [];
   actualizarHUD();
   ir('s-juego');
@@ -623,7 +667,7 @@ async function cargarPregunta() {
     preguntas.push(q);
     mostrarPregunta(q);
   } catch(e) {
-    document.getElementById('q-texto').textContent = '❌ Error al conectar con la IA. Revisá tu API Key y conexión a internet.';
+    document.getElementById('q-texto').textContent = '❌ Error al conectar con la IA. Revisá tu conexión a internet.';
     console.error(e);
   }
 }
@@ -654,9 +698,6 @@ Reglas:
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': getKey(),
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify({
       model: MODEL,
