@@ -674,11 +674,27 @@ async function cargarPregunta() {
 async function generarPregunta() {
   const nb = notebooks[nbSel];
   const usadas = preguntas.map(p => p.pregunta).join(' | ');
+
+  // Dividir el texto en fragmentos de 3000 caracteres con overlap
+  const CHUNK_SIZE = 3000;
+  const OVERLAP = 200;
+  const texto = nb.contenido;
+  let fragmento = texto;
+
+  if (texto.length > CHUNK_SIZE) {
+    // Calcular cuántos fragmentos hay
+    const totalFragmentos = Math.ceil(texto.length / (CHUNK_SIZE - OVERLAP));
+    // Elegir fragmento basado en el índice de pregunta para cubrir todo el doc
+    const fragmentoIdx = qIdx % totalFragmentos;
+    const inicio = Math.min(fragmentoIdx * (CHUNK_SIZE - OVERLAP), texto.length - CHUNK_SIZE);
+    fragmento = texto.substring(Math.max(0, inicio), inicio + CHUNK_SIZE);
+  }
+
   const prompt = `Eres un generador de preguntas de trivia para un juego estilo Preguntados.
 
-TEXTO DEL CUADERNO:
+TEXTO DEL CUADERNO (fragmento ${qIdx + 1}):
 """
-${nb.contenido}
+${fragmento}
 """
 
 Genera UNA pregunta de trivia basada ÚNICAMENTE en el texto anterior.
@@ -686,14 +702,14 @@ Preguntas ya usadas (no repetir): ${usadas || 'ninguna'}
 
 IMPORTANTE: Responde ÚNICAMENTE con el JSON, nada más. Sin explicaciones, sin markdown, sin backticks, sin texto antes o después.
 
-Formato exacto (copia esta estructura):
+Formato exacto:
 {"pregunta":"¿Texto de la pregunta?","opciones":["Opción A","Opción B","Opción C","Opción D"],"correcta":0,"categoria":"2 palabras","explicacion":"Por qué es correcta"}
 
 Reglas estrictas:
 - "correcta" es el índice (0, 1, 2 o 3) de la opción correcta en el array
 - El array "opciones" debe tener EXACTAMENTE 4 elementos
 - Las 4 opciones deben ser plausibles
-- La pregunta debe basarse en el texto del cuaderno
+- La pregunta debe basarse en el texto
 - La categoría máximo 2 palabras
 - SOLO responde con el JSON, nada más`;
 
