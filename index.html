@@ -460,7 +460,6 @@
 <script>
 // ===================== ESTADO =====================
 const API = 'https://preguntados-api.emiliano-carricondo.workers.dev';
-const MODEL = 'claude-sonnet-4-20250514';
 const TOTAL = 20;
 const TIEMPO = 20;
 
@@ -696,24 +695,16 @@ Reglas:
 
   const res = await fetch(API, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 500,
-      messages: [{ role: 'user', content: prompt }]
-    })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt })
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `HTTP ${res.status}`);
+    throw new Error(`Error del servidor: HTTP ${res.status}`);
   }
 
   const data = await res.json();
-  const texto = data.content.map(b => b.text || '').join('').trim();
-  const limpio = texto.replace(/```json|```/g,'').trim();
+  const limpio = data.texto.replace(/```json|```/g,'').trim();
   return JSON.parse(limpio);
 }
 
