@@ -704,8 +704,27 @@ Reglas:
   }
 
   const data = await res.json();
-  const limpio = data.texto.replace(/```json|```/g,'').trim();
-  return JSON.parse(limpio);
+
+  // Obtener el texto de la respuesta
+  let texto = '';
+  if (data.texto) {
+    texto = data.texto;
+  } else if (data.candidates) {
+    texto = data.candidates[0]?.content?.parts[0]?.text || '';
+  } else if (data.content) {
+    texto = data.content.map(b => b.text || '').join('');
+  }
+
+  if (!texto) throw new Error('Respuesta vacía de la IA');
+
+  // Limpiar y parsear JSON
+  const limpio = texto.replace(/```json|```/g,'').trim();
+
+  // Buscar el JSON dentro del texto por si viene con texto extra
+  const match = limpio.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('No se encontró JSON en la respuesta');
+
+  return JSON.parse(match[0]);
 }
 
 function mostrarPregunta(q) {
