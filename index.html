@@ -721,8 +721,12 @@ Reglas estrictas:
 
   if (!texto) throw new Error('Respuesta vacía de la IA');
 
-  // Limpiar markdown
-  let limpio = texto.replace(/```json|```/g,'').trim();
+  // Limpiar markdown y saltos de línea problemáticos
+  let limpio = texto
+    .replace(/```json|```/g,'')
+    .replace(/\n/g,' ')
+    .replace(/\r/g,' ')
+    .trim();
 
   // Buscar el JSON dentro del texto
   const match = limpio.match(/\{[\s\S]*\}/);
