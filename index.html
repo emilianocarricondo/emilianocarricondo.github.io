@@ -678,16 +678,14 @@ async function generarPregunta() {
   // Dividir el texto en fragmentos de 3000 caracteres con overlap
   const CHUNK_SIZE = 3000;
   const OVERLAP = 200;
-  const texto = nb.contenido;
-  let fragmento = texto;
+  const contenidoCompleto = nb.contenido;
+  let fragmento = contenidoCompleto;
 
-  if (texto.length > CHUNK_SIZE) {
-    // Calcular cuántos fragmentos hay
-    const totalFragmentos = Math.ceil(texto.length / (CHUNK_SIZE - OVERLAP));
-    // Elegir fragmento basado en el índice de pregunta para cubrir todo el doc
+  if (contenidoCompleto.length > CHUNK_SIZE) {
+    const totalFragmentos = Math.ceil(contenidoCompleto.length / (CHUNK_SIZE - OVERLAP));
     const fragmentoIdx = qIdx % totalFragmentos;
-    const inicio = Math.min(fragmentoIdx * (CHUNK_SIZE - OVERLAP), texto.length - CHUNK_SIZE);
-    fragmento = texto.substring(Math.max(0, inicio), inicio + CHUNK_SIZE);
+    const inicio = Math.min(fragmentoIdx * (CHUNK_SIZE - OVERLAP), contenidoCompleto.length - CHUNK_SIZE);
+    fragmento = contenidoCompleto.substring(Math.max(0, inicio), inicio + CHUNK_SIZE);
   }
 
   const prompt = `Eres un generador de preguntas de trivia para un juego estilo Preguntados.
